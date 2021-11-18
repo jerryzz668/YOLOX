@@ -38,7 +38,8 @@ def main():
     exp = get_exp(args.exp_file, args.name)
     if not args.experiment_name:
         args.experiment_name = exp.exp_name
-
+    from modify_args import modify_args  ####
+    exp = modify_args(exp)  ####
     model = exp.get_model()
     file_name = os.path.join(exp.output_dir, args.experiment_name)
     os.makedirs(file_name, exist_ok=True)
