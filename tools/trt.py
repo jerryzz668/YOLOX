@@ -47,34 +47,34 @@ def main():
         ckpt_file = os.path.join(file_name, "best_ckpt.pth")
     else:
         ckpt_file = args.ckpt
+    with torch.no_grad():
+        ckpt = torch.load(ckpt_file, map_location="cpu")
+        # load the model state dict
 
-    ckpt = torch.load(ckpt_file, map_location="cpu")
-    # load the model state dict
+        model.load_state_dict(ckpt["model"])
+        logger.info("loaded checkpoint done.")
+        model.eval()
+        model.cuda()
+        model.head.decode_in_inference = False
+        x = torch.ones(1, 3, exp.test_size[0], exp.test_size[1]).cuda()
+        model_trt = torch2trt(
+            model,
+            [x],
+            fp16_mode=True,
+            log_level=trt.Logger.INFO,
+            max_workspace_size=(1 << args.workspace),
+            max_batch_size=args.batch,
+        )
+        torch.save(model_trt.state_dict(), os.path.join(file_name, "model_trt.pth"))
+        logger.info("Converted TensorRT model done.")
+        engine_file = os.path.join(file_name, "model_trt.engine")
+        engine_file_demo = os.path.join("demo", "TensorRT", "cpp", "model_trt.engine")
+        with open(engine_file, "wb") as f:
+            f.write(model_trt.engine.serialize())
 
-    model.load_state_dict(ckpt["model"])
-    logger.info("loaded checkpoint done.")
-    model.eval()
-    model.cuda()
-    model.head.decode_in_inference = False
-    x = torch.ones(1, 3, exp.test_size[0], exp.test_size[1]).cuda()
-    model_trt = torch2trt(
-        model,
-        [x],
-        fp16_mode=True,
-        log_level=trt.Logger.INFO,
-        max_workspace_size=(1 << args.workspace),
-        max_batch_size=args.batch,
-    )
-    torch.save(model_trt.state_dict(), os.path.join(file_name, "model_trt.pth"))
-    logger.info("Converted TensorRT model done.")
-    engine_file = os.path.join(file_name, "model_trt.engine")
-    engine_file_demo = os.path.join("demo", "TensorRT", "cpp", "model_trt.engine")
-    with open(engine_file, "wb") as f:
-        f.write(model_trt.engine.serialize())
+        shutil.copyfile(engine_file, engine_file_demo)
 
-    shutil.copyfile(engine_file, engine_file_demo)
-
-    logger.info("Converted TensorRT model engine file is saved for C++ inference.")
+        logger.info("Converted TensorRT model engine file is saved for C++ inference.")
 
 
 if __name__ == "__main__":
