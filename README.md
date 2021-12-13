@@ -89,7 +89,7 @@ pip3 install cython; pip3 install 'git+https://github.com/cocodataset/cocoapi.gi
 <details>
 <summary>Demo</summary>
 
-Step1. Download a pretrained model from the benchmark table.
+Step1. Download a pretrained model from the benchmark table. **then only modify tools/modify_args.py**
 
 Step2. Use either -n or -f to specify your detector's config. For example:
 
